@@ -7,7 +7,10 @@
 #include "ShObjIdl.h"
 #include <KnownFolders.h>
 
-namespace {
+using namespace winrt;
+
+
+namespace PickerCommon {
 
     GUID HashHStringToGuid(winrt::hstring const& input)
     {
@@ -92,44 +95,6 @@ namespace {
         return defaultFolder;
     }
 
-
-    winrt::hstring FormatExtensionWithWildcard(winrt::hstring extension)
-    {
-        if (!extension.empty() && extension[0] == L'*')
-        {
-            return extension;
-        }
-        else
-        {
-            return L"*" + extension;
-        }
-    }
-
-    winrt::hstring JoinExtensions(winrt::Windows::Foundation::Collections::IVectorView<winrt::hstring> extensions)
-    {
-        winrt::hstring result;
-        bool first = true;
-        for (const auto& ext : extensions)
-        {
-            if (first)
-            {
-                result = FormatExtensionWithWildcard(ext);
-                first = false;
-            }
-            else
-            {
-                result = result + L";" + FormatExtensionWithWildcard(ext);
-            }
-        }
-        return result;
-    }
-}
-
-
-namespace PickerCommon {
-
-    using namespace winrt;
-
     bool IsHStringNullOrEmpty(winrt::hstring value)
     {
         return value.empty();
@@ -142,116 +107,27 @@ namespace PickerCommon {
         return winrt::hstring{ filePath.get() };
     }
 
-    /// <summary>
-    /// Capture and processing pickers filter inputs and convert them into Common Item Dialog's accepting type, for FileOpenPicker
-    /// </summary>
-    /// <param name="buffer">temp buffer to hold dynamically transformed strings</param>
-    /// <param name="filters">winrt style filters</param>
-    /// <returns>result Coomon Item Dialog style filters, note only raw pointers here,
-    /// they are valid up to lifetime of buffer
-    /// </returns>
-    std::vector<COMDLG_FILTERSPEC> CaptureFilterSpec(std::vector<winrt::hstring>& buffer, winrt::Windows::Foundation::Collections::IVectorView<winrt::hstring> filters)
+    void ConfigureDialog(winrt::com_ptr<IFileDialog> dialog, StoragePickersImpl::PickerParameters parameters, winrt::Microsoft::Windows::Storage::Pickers::PickerLocationId pickerLocationId)
     {
-        size_t resultSize = filters.Size() + 1;
-        buffer.clear();
-        buffer.reserve(resultSize * static_cast<size_t>(2));
-
-        std::wstring allFilesExtensionList;
-        for (const auto& filter : filters)
+        if (!IsHStringNullOrEmpty(parameters.CommitButtonText))
         {
-            auto ext = FormatExtensionWithWildcard(filter);
-            buffer.push_back(L"");
-            buffer.push_back(ext);
-
-            allFilesExtensionList.reserve(allFilesExtensionList.length() + ext.size() + 1);
-            allFilesExtensionList += ext;
-            allFilesExtensionList += L";";
+            check_hresult(dialog->SetOkButtonLabel(parameters.CommitButtonText.c_str()));
         }
 
-        if (!allFilesExtensionList.empty())
+        if (!IsHStringNullOrEmpty(parameters.SettingsIdentifierId))
         {
-            allFilesExtensionList.pop_back(); // Remove the last semicolon
-        }
-
-        if (filters.Size() == 0)
-        {
-            // when filters not defined, set filter to All Files *.*
-            buffer.push_back(L"");
-            buffer.push_back(L"*");
-        }
-        else if (filters.Size() == 1 && allFilesExtensionList == L"*")
-        {
-            // when there're only one filter "*", set filter to All Files *.* (override the values pushed above)
-            buffer[0] = L"";
-            buffer[1] = L"*";
-            resultSize = 1;
-        }
-        else
-        {
-            buffer.push_back(L"");
-            buffer.push_back(allFilesExtensionList.c_str());
-        }
-
-        std::vector<COMDLG_FILTERSPEC> result{ resultSize };
-        for (size_t i = 0; i < resultSize; i++)
-        {
-            result.at(i) = { buffer.at(i * 2).c_str(), buffer.at(i * 2 + 1).c_str() };
-        }
-
-        return result;
-    }
-
-    /// <summary>
-    /// Capture and processing pickers filter inputs and convert them into Common Item Dialog's accepting type, for FileSavePicker
-    /// </summary>
-    /// <param name="buffer">temp buffer to hold dynamically transformed strings</param>
-    /// <param name="filters">winrt style filters</param>
-    /// <returns>result Coomon Item Dialog style filters, note only raw pointers here,
-    /// they are valid up to lifetime of buffer
-    /// </returns>
-    std::vector<COMDLG_FILTERSPEC> CaptureFilterSpec(std::vector<winrt::hstring>& buffer, winrt::Windows::Foundation::Collections::IMapView<winrt::hstring, winrt::Windows::Foundation::Collections::IVector<hstring>> filters)
-    {
-        std::vector<COMDLG_FILTERSPEC> result(filters.Size());
-        buffer.clear();
-        buffer.reserve(filters.Size() * static_cast<size_t>(2));
-
-        for (const auto& filter : filters)
-        {
-            buffer.push_back(filter.Key());
-            auto extensionList = JoinExtensions(filter.Value().GetView());
-            buffer.push_back(extensionList);
-        }
-        for (size_t i = 0; i < filters.Size(); i++)
-        {
-            result.at(i) = { buffer.at(i * 2).c_str(), buffer.at(i * 2 + 1).c_str() };
-        }
-
-        if (result.empty())
-        {
-            result.push_back({ L"", L"*.*" });
-        }
-        return result;
-    }
-
-    void PickerParameters::ConfigureDialog(winrt::com_ptr<IFileDialog> dialog)
-    {
-        if (!IsHStringNullOrEmpty(CommitButtonText))
-        {
-            check_hresult(dialog->SetOkButtonLabel(CommitButtonText.c_str()));
-        }
-
-        if (!IsHStringNullOrEmpty(SettingsIdentifierId))
-        {
-            auto guid = HashHStringToGuid(SettingsIdentifierId);
+            auto guid = HashHStringToGuid(parameters.SettingsIdentifierId);
             check_hresult(dialog->SetClientGuid(guid));
         }
 
-        auto defaultFolder = GetKnownFolderFromId(PickerLocationId);
+        auto defaultFolder = GetKnownFolderFromId(pickerLocationId);
         if (defaultFolder != nullptr)
         {
             check_hresult(dialog->SetDefaultFolder(defaultFolder.get()));
         }
 
-        check_hresult(dialog->SetFileTypes((UINT)FileTypeFilterPara.size(), FileTypeFilterPara.data()));
+        check_hresult(dialog->SetFileTypes(
+            (UINT)parameters.FileTypeFilterPara.size(),
+            parameters.FileTypeFilterPara.data()));
     }
 }
