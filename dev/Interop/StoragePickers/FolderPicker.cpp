@@ -93,6 +93,7 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
 
         bool keepTrying = true;
         winrt::com_ptr<IShellItem> shellItem{};
+        winrt::hstring path;
         
         while (keepTrying)
         {
@@ -104,32 +105,71 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
             }
 
             hr = dialog->GetResult(shellItem.put());
-
-            if (hr == E_ACCESSDENIED)
+            
+            if (FAILED(hr))
             {
-                // Show message box and continue loop to let user pick again
-                MessageBoxW(
-                    parameters.HWnd,
-                    L"You can't open this location using this program. Please try a different location.",
-                    L"Select Folder",
-                    MB_OK | MB_ICONINFORMATION
-                );
-                // Continue the loop to show the dialog again
-            }
-            else if (FAILED(hr))
-            {
-                // Handle other failures
-                logTelemetry.Stop(m_telemetryHelper, false);
-                co_return nullptr;
+                if (hr == E_ACCESSDENIED)
+                {
+                    // Show message box and continue loop to let user pick again
+                    MessageBoxW(
+                        parameters.HWnd,
+                        L"You can't open this location using this program. Please try a different location.",
+                        L"Select Folder",
+                        MB_OK | MB_ICONINFORMATION
+                    );
+                    // Continue the loop to show the dialog again
+                }
+                else
+                {
+                    // Handle other failures
+                    logTelemetry.Stop(m_telemetryHelper, false);
+                    co_return nullptr;
+                }
             }
             else
             {
-                // Success - break out of loop
-                keepTrying = false;
+                // Check if the selected item is "This PC" or another special folder
+                // Special folders often can't be accessed through FILESYSPATH or are virtual locations
+                wil::unique_cotaskmem_string displayName;
+                hr = shellItem->GetDisplayName(SIGDN_FILESYSPATH, displayName.put());
+                
+                if (FAILED(hr) || !displayName)
+                {
+                    // SIGDN_FILESYSPATH failed, which happens with special folders like "This PC"
+                    MessageBoxW(
+                        parameters.HWnd,
+                        L"You can't open this location using this program. Please try a different location.",
+                        L"Select Folder",
+                        MB_OK | MB_ICONINFORMATION
+                    );
+                    // Continue the loop to show the dialog again
+                }
+                else
+                {
+                    // Additional verification to check if it's a special folder
+                    SFGAOF attributes = 0;
+                    hr = shellItem->GetAttributes(SFGAO_FILESYSTEM, &attributes);
+                    
+                    if (FAILED(hr) || !(attributes & SFGAO_FILESYSTEM))
+                    {
+                        // Location is not a filesystem folder
+                        MessageBoxW(
+                            parameters.HWnd,
+                            L"You can't open this location using this program. Please try a different location.",
+                            L"Select Folder",
+                            MB_OK | MB_ICONINFORMATION
+                        );
+                        // Continue the loop to show the dialog again
+                    }
+                    else
+                    {
+                        // Success - we have a valid filesystem path
+                        path = winrt::hstring(displayName.get());
+                        keepTrying = false;
+                    }
+                }
             }
         }
-
-        auto path = PickerCommon::GetPathFromShellItem(shellItem);
 
         if (cancellationToken())
         {
