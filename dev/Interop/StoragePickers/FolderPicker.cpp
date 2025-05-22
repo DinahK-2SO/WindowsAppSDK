@@ -8,6 +8,7 @@
 #include <shobjidl.h>
 #include <shobjidl_core.h>
 #include <winrt/Microsoft.UI.Interop.h>
+#include <windows.h>
 #include "PickerCommon.h"
 #include "PickFolderResult.h"
 
@@ -90,6 +91,10 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
         parameters.ConfigureDialog(dialog);
         dialog->SetOptions(FOS_PICKFOLDERS);
 
+        bool keepTrying = true;
+        winrt::com_ptr<IShellItem> shellItem{};
+        
+        while (keepTrying)
         {
             auto hr = dialog->Show(parameters.HWnd);
             if (FAILED(hr) || cancellationToken())
@@ -97,10 +102,33 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
                 logTelemetry.Stop(m_telemetryHelper, false);
                 co_return nullptr;
             }
+
+            hr = dialog->GetResult(shellItem.put());
+
+            if (hr == E_ACCESSDENIED)
+            {
+                // Show message box and continue loop to let user pick again
+                MessageBoxW(
+                    parameters.HWnd,
+                    L"You can't open this location using this program. Please try a different location.",
+                    L"Select Folder",
+                    MB_OK | MB_ICONINFORMATION
+                );
+                // Continue the loop to show the dialog again
+            }
+            else if (FAILED(hr))
+            {
+                // Handle other failures
+                logTelemetry.Stop(m_telemetryHelper, false);
+                co_return nullptr;
+            }
+            else
+            {
+                // Success - break out of loop
+                keepTrying = false;
+            }
         }
 
-        winrt::com_ptr<IShellItem> shellItem{};
-        check_hresult(dialog->GetResult(shellItem.put()));
         auto path = PickerCommon::GetPathFromShellItem(shellItem);
 
         if (cancellationToken())
