@@ -88,7 +88,9 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
         auto dialog = create_instance<IFileOpenDialog>(CLSID_FileOpenDialog, CLSCTX_INPROC_SERVER);
 
         parameters.ConfigureDialog(dialog);
-        dialog->SetOptions(FOS_PICKFOLDERS);
+        FILEOPENDIALOGOPTIONS dialogOptions;
+        check_hresult(dialog->GetOptions(&dialogOptions));
+        check_hresult(dialog->SetOptions(dialogOptions | FOS_PICKFOLDERS | FOS_DONTADDTORECENT));
 
         {
             auto hr = dialog->Show(parameters.HWnd);
