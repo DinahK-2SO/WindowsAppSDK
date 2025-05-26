@@ -36,6 +36,7 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
 		PickerLocationId m_suggestedStartLocation{ PickerLocationId::Unspecified };
 		hstring m_commitButtonText{};
         StoragePickersTelemetryHelper m_telemetryHelper{};
+        winrt::com_ptr<IShellItem> m_lastBrowsedFolder{};
 
         winrt::Windows::Foundation::Collections::IVector<hstring> m_fileTypeFilter{ winrt::single_threaded_vector<hstring>() };
 

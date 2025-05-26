@@ -90,7 +90,13 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
         parameters.ConfigureDialog(dialog);
         FILEOPENDIALOGOPTIONS dialogOptions;
         check_hresult(dialog->GetOptions(&dialogOptions));
-        check_hresult(dialog->SetOptions(dialogOptions | FOS_PICKFOLDERS | FOS_DONTADDTORECENT));
+        check_hresult(dialog->SetOptions(dialogOptions | FOS_PICKFOLDERS));
+
+        // Set the folder to the last browsed folder if available
+        if (m_lastBrowsedFolder)
+        {
+            check_hresult(dialog->SetFolder(m_lastBrowsedFolder.get()));
+        }
 
         {
             auto hr = dialog->Show(parameters.HWnd);
@@ -101,6 +107,12 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
             }
         }
 
+        // Save the current browsed folder for next time
+        winrt::com_ptr<IShellItem> currentFolder{};
+        check_hresult(dialog->GetFolder(currentFolder.put()));
+        m_lastBrowsedFolder = currentFolder;
+
+        // Get the selected folder
         winrt::com_ptr<IShellItem> shellItem{};
         check_hresult(dialog->GetResult(shellItem.put()));
         auto path = PickerCommon::GetPathFromShellItem(shellItem);
