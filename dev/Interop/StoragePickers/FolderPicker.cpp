@@ -89,7 +89,7 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
         auto dialog = create_instance<IFileOpenDialog>(CLSID_FileOpenDialog, CLSCTX_INPROC_SERVER);
 
         parameters.ConfigureDialog(dialog);
-        dialog->SetOptions(FOS_PICKFOLDERS);
+        dialog->SetOptions(FOS_PICKFOLDERS | FOS_FORCEFILESYSTEM);
 
         bool keepTrying = true;
         winrt::com_ptr<IShellItem> shellItem{};
