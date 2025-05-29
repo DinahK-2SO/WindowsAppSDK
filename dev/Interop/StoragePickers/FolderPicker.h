@@ -52,7 +52,7 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
 			// Capture the current folder when user navigates
 			if (pfd)
 			{
-				pfd->GetFolder(&m_lastBrowsedFolder);
+				pfd->GetFolder(m_lastBrowsedFolder.put());
 			}
 			return S_OK;
 		}
