@@ -92,25 +92,36 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
         check_hresult(dialog->GetOptions(&dialogOptions));
         check_hresult(dialog->SetOptions(dialogOptions | FOS_PICKFOLDERS));
 
+        // Create event handler to track folder navigation
+        auto eventHandler = new FolderDialogEventHandler();
+        DWORD eventCookie;
+        check_hresult(dialog->Advise(eventHandler, &eventCookie));
+
         // Set the folder to the last browsed folder if available
         if (m_lastBrowsedFolder)
         {
             check_hresult(dialog->SetFolder(m_lastBrowsedFolder.get()));
         }
 
+        HRESULT hr;
         {
-            auto hr = dialog->Show(parameters.HWnd);
+            hr = dialog->Show(parameters.HWnd);
             if (FAILED(hr) || cancellationToken())
             {
+                // Clean up event handler
+                dialog->Unadvise(eventCookie);
+                eventHandler->Release();
                 logTelemetry.Stop(m_telemetryHelper, false);
                 co_return nullptr;
             }
         }
 
-        // Save the current browsed folder for next time
-        winrt::com_ptr<IShellItem> currentFolder{};
-        check_hresult(dialog->GetFolder(currentFolder.put()));
-        m_lastBrowsedFolder = currentFolder;
+        // Save the last browsed folder from the event handler
+        m_lastBrowsedFolder = eventHandler->GetLastBrowsedFolder();
+
+        // Clean up event handler
+        dialog->Unadvise(eventCookie);
+        eventHandler->Release();
 
         // Get the selected folder
         winrt::com_ptr<IShellItem> shellItem{};
