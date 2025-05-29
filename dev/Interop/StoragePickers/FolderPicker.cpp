@@ -13,6 +13,9 @@
 
 namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
 {
+    // Define the static member
+    winrt::com_ptr<IShellItem> FolderPicker::s_lastBrowsedFolder{};
+
     FolderPicker::FolderPicker(winrt::Microsoft::UI::WindowId const& windowId)
         : m_windowId(windowId)
     {
@@ -98,9 +101,9 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
         check_hresult(dialog->Advise(eventHandler, &eventCookie));
 
         // Set the folder to the last browsed folder if available
-        if (m_lastBrowsedFolder)
+        if (s_lastBrowsedFolder)
         {
-            check_hresult(dialog->SetFolder(m_lastBrowsedFolder.get()));
+            check_hresult(dialog->SetFolder(s_lastBrowsedFolder.get()));
         }
 
         HRESULT hr;
@@ -117,7 +120,7 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
         }
 
         // Save the last browsed folder from the event handler
-        m_lastBrowsedFolder = eventHandler->GetLastBrowsedFolder();
+        s_lastBrowsedFolder = eventHandler->GetLastBrowsedFolder();
 
         // Clean up event handler
         dialog->Unadvise(eventCookie);
