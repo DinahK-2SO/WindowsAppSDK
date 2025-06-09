@@ -209,6 +209,19 @@ namespace Test::StoragePickersTests
             VERIFY_IS_NULL(nullFile);
         }
 
+        TEST_METHOD(VerifySuggestedSaveFilePathHandling)
+        {
+            // Test path handling with various path formats
+            auto suggestedFile1 = winrt::make<winrt::Microsoft::Windows::Storage::Pickers::implementation::SuggestedSaveFile>(L"C:\\Users\\Documents\\Report.pdf");
+            VERIFY_ARE_EQUAL(suggestedFile1.Path(), L"C:\\Users\\Documents\\Report.pdf");
+
+            auto suggestedFile2 = winrt::make<winrt::Microsoft::Windows::Storage::Pickers::implementation::SuggestedSaveFile>(L"MyFile.txt");
+            VERIFY_ARE_EQUAL(suggestedFile2.Path(), L"MyFile.txt");
+
+            auto suggestedFile3 = winrt::make<winrt::Microsoft::Windows::Storage::Pickers::implementation::SuggestedSaveFile>(L"D:\\Projects\\Source\\main.cpp");
+            VERIFY_ARE_EQUAL(suggestedFile3.Path(), L"D:\\Projects\\Source\\main.cpp");
+        }
+
         TEST_METHOD(VerifyFolderPickerOptionsAreReadCorrectly)
         {
             auto parentWindow = ::GetForegroundWindow();
