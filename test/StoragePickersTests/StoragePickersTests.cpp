@@ -178,6 +178,36 @@ namespace Test::StoragePickersTests
             VERIFY_ARE_EQUAL(picker.FileTypeChoices().Lookup(L"All Files").GetAt(0), L"*");
         }
 
+        TEST_METHOD(VerifySuggestedSaveFileInterface)
+        {
+            // Test the new ISuggestedSaveFile interface and SuggestedSaveFile runtime class
+            auto suggestedFile = winrt::make<winrt::Microsoft::Windows::Storage::Pickers::implementation::SuggestedSaveFile>(L"C:\\Users\\Documents\\MyDocument.txt");
+            VERIFY_ARE_EQUAL(suggestedFile.Path(), L"C:\\Users\\Documents\\MyDocument.txt");
+
+            // Test that it can be used as an ISuggestedSaveFile
+            winrt::Microsoft::Windows::Storage::Pickers::ISuggestedSaveFile interfaceRef = suggestedFile;
+            VERIFY_ARE_EQUAL(interfaceRef.Path(), L"C:\\Users\\Documents\\MyDocument.txt");
+        }
+
+        TEST_METHOD(VerifyFileSavePickerSuggestedSaveFileProperty)
+        {
+            winrt::Microsoft::UI::WindowId windowId{};
+            winrt::Microsoft::Windows::Storage::Pickers::FileSavePicker picker(windowId);
+
+            // Test setting and getting ISuggestedSaveFile
+            auto suggestedFile = winrt::make<winrt::Microsoft::Windows::Storage::Pickers::implementation::SuggestedSaveFile>(L"C:\\Users\\Documents\\TestFile.docx");
+            picker.SuggestedSaveFile(suggestedFile);
+
+            auto retrievedFile = picker.SuggestedSaveFile();
+            VERIFY_IS_NOT_NULL(retrievedFile);
+            VERIFY_ARE_EQUAL(retrievedFile.Path(), L"C:\\Users\\Documents\\TestFile.docx");
+
+            // Test setting to null
+            picker.SuggestedSaveFile(nullptr);
+            auto nullFile = picker.SuggestedSaveFile();
+            VERIFY_IS_NULL(nullFile);
+        }
+
         TEST_METHOD(VerifyFolderPickerOptionsAreReadCorrectly)
         {
             auto parentWindow = ::GetForegroundWindow();
