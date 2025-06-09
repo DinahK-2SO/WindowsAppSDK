@@ -17,6 +17,7 @@
 #include "TerminalVelocityFeatures-StoragePickers.h"
 #include "PickerCommon.h"
 #include "PickFileResult.h"
+#include <filesystem>
 
 namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
 {
@@ -62,11 +63,11 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
     {
         m_defaultFileExtension = value;
     }
-    winrt::Windows::Storage::StorageFile FileSavePicker::SuggestedSaveFile()
+    winrt::Microsoft::Windows::Storage::Pickers::ISuggestedSaveFile FileSavePicker::SuggestedSaveFile()
     {
         return m_suggestedSaveFile;
     }
-    void FileSavePicker::SuggestedSaveFile(winrt::Windows::Storage::StorageFile const& value)
+    void FileSavePicker::SuggestedSaveFile(winrt::Microsoft::Windows::Storage::Pickers::ISuggestedSaveFile const& value)
     {
         m_suggestedSaveFile = value;
     }
@@ -131,16 +132,32 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
         check_hresult(dialog->GetOptions(&dialogOptions));
         check_hresult(dialog->SetOptions(dialogOptions | FOS_STRICTFILETYPES));
 
-        if (!PickerCommon::IsHStringNullOrEmpty(suggestedFileName))
-        {
-            check_hresult(dialog->SetFileName(suggestedFileName.c_str()));
-        }
-
+        // Handle SuggestedSaveFile - if it exists, its filename takes precedence over SuggestedFileName
+        hstring fileNameToSet = suggestedFileName;
         if (suggestedSaveFile != nullptr)
         {
-            winrt::com_ptr<IShellItem> shellItem;
-            check_hresult(SHCreateItemFromParsingName(suggestedSaveFile.Path().c_str(), nullptr, IID_PPV_ARGS(shellItem.put())));
-            check_hresult(dialog->SetSaveAsItem(shellItem.get()));
+            // Parse the path to extract directory and filename
+            std::filesystem::path fullPath(suggestedSaveFile.Path().c_str());
+            
+            // Set the directory for the dialog
+            if (!fullPath.parent_path().empty())
+            {
+                winrt::com_ptr<IShellItem> folderItem;
+                check_hresult(SHCreateItemFromParsingName(fullPath.parent_path().c_str(), nullptr, IID_PPV_ARGS(folderItem.put())));
+                check_hresult(dialog->SetFolder(folderItem.get()));
+            }
+            
+            // Use the filename part of SuggestedSaveFile, taking precedence over SuggestedFileName
+            if (!fullPath.filename().empty())
+            {
+                fileNameToSet = winrt::hstring(fullPath.filename().c_str());
+            }
+        }
+
+        // Set the filename in the dialog
+        if (!PickerCommon::IsHStringNullOrEmpty(fileNameToSet))
+        {
+            check_hresult(dialog->SetFileName(fileNameToSet.c_str()));
         }
 
         {

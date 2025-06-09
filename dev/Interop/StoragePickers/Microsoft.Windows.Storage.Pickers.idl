@@ -33,6 +33,18 @@ namespace Microsoft.Windows.Storage.Pickers
     }
 
     [feature(Feature_StoragePickers)]
+    interface ISuggestedSaveFile
+    {
+        String Path { get; };
+    }
+
+    [feature(Feature_StoragePickers)]
+    runtimeclass SuggestedSaveFile : ISuggestedSaveFile
+    {
+        SuggestedSaveFile(String path);
+    }
+
+    [feature(Feature_StoragePickers)]
     runtimeclass FileOpenPicker
     {
         FileOpenPicker(Microsoft.UI.WindowId windowId);
@@ -57,7 +69,7 @@ namespace Microsoft.Windows.Storage.Pickers
         String CommitButtonText;
         Windows.Foundation.Collections.IMap<String, Windows.Foundation.Collections.IVector<String> > FileTypeChoices{ get; };
         String DefaultFileExtension;
-        Windows.Storage.StorageFile SuggestedSaveFile;
+        ISuggestedSaveFile SuggestedSaveFile;
         String SuggestedFileName;
 
         [remote_sync] Windows.Foundation.IAsyncOperation<PickFileResult> PickSaveFileAsync();

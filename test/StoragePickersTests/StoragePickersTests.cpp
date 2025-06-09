@@ -178,6 +178,26 @@ namespace Test::StoragePickersTests
             VERIFY_ARE_EQUAL(picker.FileTypeChoices().Lookup(L"All Files").GetAt(0), L"*");
         }
 
+        TEST_METHOD(VerifyFileSavePickerSuggestedSaveFileInterface)
+        {
+            winrt::Microsoft::UI::WindowId windowId{};
+            winrt::Microsoft::Windows::Storage::Pickers::FileSavePicker picker(windowId);
+
+            // Test creating SuggestedSaveFile with a path
+            auto suggestedSaveFile = winrt::Microsoft::Windows::Storage::Pickers::SuggestedSaveFile(L"C:\\temp\\testfile.txt");
+            VERIFY_ARE_EQUAL(suggestedSaveFile.Path(), L"C:\\temp\\testfile.txt");
+
+            // Test setting and getting SuggestedSaveFile on FileSavePicker
+            picker.SuggestedSaveFile(suggestedSaveFile);
+            auto retrievedSuggestedSaveFile = picker.SuggestedSaveFile();
+            VERIFY_IS_NOT_NULL(retrievedSuggestedSaveFile);
+            VERIFY_ARE_EQUAL(retrievedSuggestedSaveFile.Path(), L"C:\\temp\\testfile.txt");
+
+            // Test setting to null
+            picker.SuggestedSaveFile(nullptr);
+            VERIFY_IS_NULL(picker.SuggestedSaveFile());
+        }
+
         TEST_METHOD(VerifyFolderPickerOptionsAreReadCorrectly)
         {
             auto parentWindow = ::GetForegroundWindow();

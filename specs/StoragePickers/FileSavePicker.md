@@ -12,6 +12,16 @@ Represents a UI element that lets the user choose a file to save.
 ## Definition
 
 ```C#
+interface ISuggestedSaveFile
+{
+    string Path { get; }
+}
+
+runtimeclass SuggestedSaveFile : ISuggestedSaveFile
+{
+    SuggestedSaveFile(string path);
+}
+
 runtimeclass FileSavePicker
 {
     FileSavePicker(Microsoft.UI.WindowId windowId);
@@ -21,7 +31,7 @@ runtimeclass FileSavePicker
     string SettingsIdentifier;
     string DefaultFileExtension;
     string SuggestedFileName;
-    Windows.Storage.StorageFile SuggestedSaveFile;
+    ISuggestedSaveFile SuggestedSaveFile;
     IMap<string, IVector<string>> FileTypeChoices{ get; };
 
     PickerLocationId SuggestedStartLocation;
