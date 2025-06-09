@@ -136,21 +136,34 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
         hstring fileNameToSet = suggestedFileName;
         if (suggestedSaveFile != nullptr)
         {
-            // Parse the path to extract directory and filename
-            std::filesystem::path fullPath(suggestedSaveFile.Path().c_str());
-            
-            // Set the directory for the dialog
-            if (!fullPath.parent_path().empty())
+            try
             {
-                winrt::com_ptr<IShellItem> folderItem;
-                check_hresult(SHCreateItemFromParsingName(fullPath.parent_path().c_str(), nullptr, IID_PPV_ARGS(folderItem.put())));
-                check_hresult(dialog->SetFolder(folderItem.get()));
+                // Parse the path to extract directory and filename
+                std::filesystem::path fullPath(suggestedSaveFile.Path().c_str());
+                
+                // Set the directory for the dialog if parent path exists and is not empty
+                if (!fullPath.parent_path().empty())
+                {
+                    winrt::com_ptr<IShellItem> folderItem;
+                    auto hr = SHCreateItemFromParsingName(fullPath.parent_path().c_str(), nullptr, IID_PPV_ARGS(folderItem.put()));
+                    if (SUCCEEDED(hr))
+                    {
+                        dialog->SetFolder(folderItem.get());
+                    }
+                    // If directory doesn't exist or is invalid, continue without setting folder
+                    // This allows the dialog to use its default location
+                }
+                
+                // Use the filename part of SuggestedSaveFile, taking precedence over SuggestedFileName
+                if (!fullPath.filename().empty())
+                {
+                    fileNameToSet = winrt::hstring(fullPath.filename().c_str());
+                }
             }
-            
-            // Use the filename part of SuggestedSaveFile, taking precedence over SuggestedFileName
-            if (!fullPath.filename().empty())
+            catch (...)
             {
-                fileNameToSet = winrt::hstring(fullPath.filename().c_str());
+                // If path parsing fails, ignore SuggestedSaveFile and fall back to SuggestedFileName
+                // This ensures the dialog still works even with malformed paths
             }
         }
 
