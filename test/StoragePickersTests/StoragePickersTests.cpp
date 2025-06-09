@@ -5,6 +5,7 @@
 
 #include <FrameworkUdk/Containment.h>
 #include <winrt/Microsoft.Windows.Storage.Pickers.h>
+#include <SuggestedSaveFile.h>
 
 namespace TB = ::Test::Bootstrap;
 namespace TP = ::Test::Packages;
