@@ -21,12 +21,22 @@ runtimeclass FileSavePicker
     string SettingsIdentifier;
     string DefaultFileExtension;
     string SuggestedFileName;
-    Windows.Storage.StorageFile SuggestedSaveFile;
+    ISuggestedSaveFile SuggestedSaveFile;
     IMap<string, IVector<string>> FileTypeChoices{ get; };
 
     PickerLocationId SuggestedStartLocation;
 
     Windows.Foundation.IAsyncOperation<PickFileResult> PickSaveFileAsync()
+}
+
+interface ISuggestedSaveFile
+{
+    string Path { get; };
+}
+
+runtimeclass SuggestedSaveFile : ISuggestedSaveFile
+{
+    SuggestedSaveFile(string path);
 }
 ```
 
@@ -46,6 +56,10 @@ var savePicker = new FileSavePicker(this.AppWindow.Id)
     
     // (Optional) specify the default file name. If not specified, use system default.
     SuggestedFileName = "My Document",
+
+    // (Optional) specify a suggested file with full path. This takes precedence over SuggestedFileName.
+    //     The dialog will default to the directory and pre-fill the filename from this path.
+    SuggestedSaveFile = new SuggestedSaveFile(@"C:\Users\user\Documents\MyDocument.txt"),
 
     // (Optional) specify the text displayed on commit button. If not specified, use system default.
     CommitButtonText = "Save Document",
@@ -76,6 +90,11 @@ savePicker.SuggestedStartLocation(PickerLocationId::DocumentsLibrary);
 
 // (Optional) specify the default file name. If not specified, use system default.
 savePicker.SuggestedFileName(L"NewDocument");
+
+// (Optional) specify a suggested file with full path. This takes precedence over SuggestedFileName.
+//     The dialog will default to the directory and pre-fill the filename from this path.
+auto suggestedSaveFile = winrt::make<winrt::Microsoft::Windows::Storage::Pickers::implementation::SuggestedSaveFile>(L"C:\\Users\\user\\Documents\\MyDocument.txt");
+savePicker.SuggestedSaveFile(suggestedSaveFile);
 
 // (Optional) categorized extensions types. If not specified, allow All Files (*.*)
 //     Note that when allow All Files (*.*), end users can save a file without extension.

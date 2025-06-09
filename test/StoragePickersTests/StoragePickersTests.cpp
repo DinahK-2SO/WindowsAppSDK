@@ -5,6 +5,7 @@
 
 #include <FrameworkUdk/Containment.h>
 #include <winrt/Microsoft.Windows.Storage.Pickers.h>
+#include "..//..//dev//Interop//StoragePickers//SuggestedSaveFile.h"
 
 namespace TB = ::Test::Bootstrap;
 namespace TP = ::Test::Packages;
@@ -176,6 +177,22 @@ namespace Test::StoragePickersTests
             filters.Append(L"*");
             picker.FileTypeChoices().Insert(L"All Files", filters);
             VERIFY_ARE_EQUAL(picker.FileTypeChoices().Lookup(L"All Files").GetAt(0), L"*");
+        }
+
+        TEST_METHOD(VerifyISuggestedSaveFileImplementation)
+        {
+            // Test SuggestedSaveFile interface and runtime class
+            auto suggestedSaveFile = winrt::make<winrt::Microsoft::Windows::Storage::Pickers::implementation::SuggestedSaveFile>(L"C:\\TestFolder\\TestFile.txt");
+            VERIFY_ARE_EQUAL(suggestedSaveFile.Path(), L"C:\\TestFolder\\TestFile.txt");
+
+            // Test FileSavePicker with ISuggestedSaveFile
+            winrt::Microsoft::UI::WindowId windowId{};
+            winrt::Microsoft::Windows::Storage::Pickers::FileSavePicker picker(windowId);
+            
+            picker.SuggestedSaveFile(suggestedSaveFile);
+            auto retrievedSuggestedSaveFile = picker.SuggestedSaveFile();
+            VERIFY_IS_NOT_NULL(retrievedSuggestedSaveFile);
+            VERIFY_ARE_EQUAL(retrievedSuggestedSaveFile.Path(), L"C:\\TestFolder\\TestFile.txt");
         }
 
         TEST_METHOD(VerifyFolderPickerOptionsAreReadCorrectly)
