@@ -12,6 +12,16 @@ Represents a UI element that lets the user choose a file to save.
 ## Definition
 
 ```C#
+interface ISuggestedSaveFile
+{
+    string Path { get; }
+}
+
+runtimeclass SuggestedSaveFile : ISuggestedSaveFile
+{
+    SuggestedSaveFile(string path);
+}
+
 runtimeclass FileSavePicker
 {
     FileSavePicker(Microsoft.UI.WindowId windowId);
@@ -21,7 +31,7 @@ runtimeclass FileSavePicker
     string SettingsIdentifier;
     string DefaultFileExtension;
     string SuggestedFileName;
-    Windows.Storage.StorageFile SuggestedSaveFile;
+    ISuggestedSaveFile SuggestedSaveFile;
     IMap<string, IVector<string>> FileTypeChoices{ get; };
 
     PickerLocationId SuggestedStartLocation;
@@ -46,6 +56,10 @@ var savePicker = new FileSavePicker(this.AppWindow.Id)
     
     // (Optional) specify the default file name. If not specified, use system default.
     SuggestedFileName = "My Document",
+
+    // (Optional) specify a suggested save file path. This will set both the directory location 
+    // and filename. The filename from SuggestedSaveFile takes precedence over SuggestedFileName.
+    SuggestedSaveFile = new SuggestedSaveFile(@"C:\Documents\MyProject\SavedFile.txt"),
 
     // (Optional) specify the text displayed on commit button. If not specified, use system default.
     CommitButtonText = "Save Document",
@@ -76,6 +90,11 @@ savePicker.SuggestedStartLocation(PickerLocationId::DocumentsLibrary);
 
 // (Optional) specify the default file name. If not specified, use system default.
 savePicker.SuggestedFileName(L"NewDocument");
+
+// (Optional) specify a suggested save file path. This will set both the directory location 
+// and filename. The filename from SuggestedSaveFile takes precedence over SuggestedFileName.
+auto suggestedSaveFile = SuggestedSaveFile(L"C:\\Documents\\MyProject\\SavedFile.txt");
+savePicker.SuggestedSaveFile(suggestedSaveFile);
 
 // (Optional) categorized extensions types. If not specified, allow All Files (*.*)
 //     Note that when allow All Files (*.*), end users can save a file without extension.

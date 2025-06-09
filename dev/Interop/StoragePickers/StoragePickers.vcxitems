@@ -17,11 +17,13 @@
     <ClCompile Include="$(MSBuildThisFileDirectory)PickerCommon.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)PickFileResult.cpp" />
     <ClCompile Include="$(MSBuildThisFileDirectory)PickFolderResult.cpp" />
+    <ClCompile Include="$(MSBuildThisFileDirectory)SuggestedSaveFile.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="$(MSBuildThisFileDirectory)PickerCommon.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)PickFileResult.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)PickFolderResult.h" />
+    <ClInclude Include="$(MSBuildThisFileDirectory)SuggestedSaveFile.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)StoragePickersTelemetry.h" />
     <ClInclude Include="$(MSBuildThisFileDirectory)StoragePickersTelemetryHelper.h" />
   </ItemGroup>

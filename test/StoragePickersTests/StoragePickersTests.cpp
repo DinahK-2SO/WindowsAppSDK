@@ -178,6 +178,78 @@ namespace Test::StoragePickersTests
             VERIFY_ARE_EQUAL(picker.FileTypeChoices().Lookup(L"All Files").GetAt(0), L"*");
         }
 
+        TEST_METHOD(VerifyFileSavePickerSuggestedSaveFileInterface)
+        {
+            winrt::Microsoft::UI::WindowId windowId{};
+            winrt::Microsoft::Windows::Storage::Pickers::FileSavePicker picker(windowId);
+
+            // Test creating SuggestedSaveFile with a path
+            auto suggestedSaveFile = winrt::Microsoft::Windows::Storage::Pickers::SuggestedSaveFile(L"C:\\temp\\testfile.txt");
+            VERIFY_ARE_EQUAL(suggestedSaveFile.Path(), L"C:\\temp\\testfile.txt");
+
+            // Test setting and getting SuggestedSaveFile on FileSavePicker
+            picker.SuggestedSaveFile(suggestedSaveFile);
+            auto retrievedSuggestedSaveFile = picker.SuggestedSaveFile();
+            VERIFY_IS_NOT_NULL(retrievedSuggestedSaveFile);
+            VERIFY_ARE_EQUAL(retrievedSuggestedSaveFile.Path(), L"C:\\temp\\testfile.txt");
+
+            // Test setting to null
+            picker.SuggestedSaveFile(nullptr);
+            VERIFY_IS_NULL(picker.SuggestedSaveFile());
+        }
+
+        TEST_METHOD(VerifyFileSavePickerSuggestedSaveFileEdgeCases)
+        {
+            winrt::Microsoft::UI::WindowId windowId{};
+            winrt::Microsoft::Windows::Storage::Pickers::FileSavePicker picker(windowId);
+
+            // Test with empty path
+            auto emptySuggestedSaveFile = winrt::Microsoft::Windows::Storage::Pickers::SuggestedSaveFile(L"");
+            VERIFY_ARE_EQUAL(emptySuggestedSaveFile.Path(), L"");
+            picker.SuggestedSaveFile(emptySuggestedSaveFile);
+            VERIFY_IS_NOT_NULL(picker.SuggestedSaveFile());
+
+            // Test with filename only (no directory)
+            auto filenameOnlyFile = winrt::Microsoft::Windows::Storage::Pickers::SuggestedSaveFile(L"myfile.txt");
+            VERIFY_ARE_EQUAL(filenameOnlyFile.Path(), L"myfile.txt");
+            picker.SuggestedSaveFile(filenameOnlyFile);
+            VERIFY_ARE_EQUAL(picker.SuggestedSaveFile().Path(), L"myfile.txt");
+
+            // Test with directory only (no filename)
+            auto directoryOnlyFile = winrt::Microsoft::Windows::Storage::Pickers::SuggestedSaveFile(L"C:\\temp\\");
+            VERIFY_ARE_EQUAL(directoryOnlyFile.Path(), L"C:\\temp\\");
+            picker.SuggestedSaveFile(directoryOnlyFile);
+            VERIFY_ARE_EQUAL(picker.SuggestedSaveFile().Path(), L"C:\\temp\\");
+
+            // Test with relative path
+            auto relativePathFile = winrt::Microsoft::Windows::Storage::Pickers::SuggestedSaveFile(L"..\\Documents\\file.txt");
+            VERIFY_ARE_EQUAL(relativePathFile.Path(), L"..\\Documents\\file.txt");
+            picker.SuggestedSaveFile(relativePathFile);
+            VERIFY_ARE_EQUAL(picker.SuggestedSaveFile().Path(), L"..\\Documents\\file.txt");
+        }
+
+        TEST_METHOD(VerifyFileSavePickerSuggestedSaveFileAndSuggestedFileNameCoexistence)
+        {
+            winrt::Microsoft::UI::WindowId windowId{};
+            winrt::Microsoft::Windows::Storage::Pickers::FileSavePicker picker(windowId);
+
+            // Test that both SuggestedSaveFile and SuggestedFileName can be set independently
+            picker.SuggestedFileName(L"suggested.txt");
+            VERIFY_ARE_EQUAL(picker.SuggestedFileName(), L"suggested.txt");
+
+            auto suggestedSaveFile = winrt::Microsoft::Windows::Storage::Pickers::SuggestedSaveFile(L"C:\\temp\\priority.txt");
+            picker.SuggestedSaveFile(suggestedSaveFile);
+            
+            // Verify both properties are set independently
+            VERIFY_ARE_EQUAL(picker.SuggestedFileName(), L"suggested.txt");
+            VERIFY_ARE_EQUAL(picker.SuggestedSaveFile().Path(), L"C:\\temp\\priority.txt");
+
+            // Test clearing SuggestedSaveFile while keeping SuggestedFileName
+            picker.SuggestedSaveFile(nullptr);
+            VERIFY_IS_NULL(picker.SuggestedSaveFile());
+            VERIFY_ARE_EQUAL(picker.SuggestedFileName(), L"suggested.txt");
+        }
+
         TEST_METHOD(VerifyFolderPickerOptionsAreReadCorrectly)
         {
             auto parentWindow = ::GetForegroundWindow();

@@ -28,6 +28,7 @@ showing UI.
 | [FolderPicker](./FolderPicker.md)    | Displays a UI element that allows user to choose a folder.|
 | [PickFileResult](./PickFileResult.md)| Represents the result of a file picking operation.        |
 | [PickFolderResult](./PickFolderResult.md) | Represents the result of a folder picking operation. |
+| SuggestedSaveFile | Represents a suggested save file with a path. |
 
 ## Enums
 
@@ -69,6 +70,16 @@ namespace Microsoft.Windows.Storage.Pickers
         string Path { get; }
     }
 
+    interface ISuggestedSaveFile
+    {
+        string Path { get; }
+    }
+
+    runtimeclass SuggestedSaveFile : ISuggestedSaveFile
+    {
+        SuggestedSaveFile(string path);
+    }
+
     runtimeclass FileOpenPicker
     {
         FileOpenPicker(Microsoft.UI.WindowId windowId);
@@ -92,7 +103,7 @@ namespace Microsoft.Windows.Storage.Pickers
         string SettingsIdentifier;
         string DefaultFileExtension;
         string SuggestedFileName;
-        Windows.Storage.StorageFile SuggestedSaveFile;
+        ISuggestedSaveFile SuggestedSaveFile;
         IMap<string, IVector<string>> FileTypeChoices{ get; };
 
         PickerLocationId SuggestedStartLocation;
