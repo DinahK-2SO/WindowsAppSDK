@@ -3,6 +3,7 @@
 
 #include "pch.h"
 #include "FileSavePicker.h"
+#include "SuggestedSaveFile.h"
 #include "Microsoft.Windows.Storage.Pickers.FileSavePicker.g.cpp"
 #include "StoragePickersTelemetry.h"
 #include <windows.h>
@@ -62,11 +63,11 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
     {
         m_defaultFileExtension = value;
     }
-    winrt::Windows::Storage::StorageFile FileSavePicker::SuggestedSaveFile()
+    winrt::Microsoft::Windows::Storage::Pickers::ISuggestedSaveFile FileSavePicker::SuggestedSaveFile()
     {
         return m_suggestedSaveFile;
     }
-    void FileSavePicker::SuggestedSaveFile(winrt::Windows::Storage::StorageFile const& value)
+    void FileSavePicker::SuggestedSaveFile(winrt::Microsoft::Windows::Storage::Pickers::ISuggestedSaveFile const& value)
     {
         m_suggestedSaveFile = value;
     }
@@ -131,16 +132,50 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
         check_hresult(dialog->GetOptions(&dialogOptions));
         check_hresult(dialog->SetOptions(dialogOptions | FOS_STRICTFILETYPES));
 
-        if (!PickerCommon::IsHStringNullOrEmpty(suggestedFileName))
-        {
-            check_hresult(dialog->SetFileName(suggestedFileName.c_str()));
-        }
-
+        // Handle SuggestedSaveFile - extract directory and filename parts
+        winrt::hstring fileNameToSet = suggestedFileName;
         if (suggestedSaveFile != nullptr)
         {
-            winrt::com_ptr<IShellItem> shellItem;
-            check_hresult(SHCreateItemFromParsingName(suggestedSaveFile.Path().c_str(), nullptr, IID_PPV_ARGS(shellItem.put())));
-            check_hresult(dialog->SetSaveAsItem(shellItem.get()));
+            auto suggestedPath = suggestedSaveFile.Path();
+            if (!PickerCommon::IsHStringNullOrEmpty(suggestedPath))
+            {
+                // Extract directory and filename parts
+                std::wstring pathStr(suggestedPath.c_str());
+                size_t lastSlash = pathStr.find_last_of(L"\\/");
+                
+                if (lastSlash != std::wstring::npos)
+                {
+                    // Set the directory as the starting location
+                    std::wstring dirPath = pathStr.substr(0, lastSlash);
+                    if (!dirPath.empty())
+                    {
+                        winrt::com_ptr<IShellItem> shellItem;
+                        HRESULT hr = SHCreateItemFromParsingName(dirPath.c_str(), nullptr, IID_PPV_ARGS(shellItem.put()));
+                        if (SUCCEEDED(hr))
+                        {
+                            dialog->SetFolder(shellItem.get());
+                        }
+                    }
+                    
+                    // Extract filename and use it (takes precedence over SuggestedFileName)
+                    std::wstring fileName = pathStr.substr(lastSlash + 1);
+                    if (!fileName.empty())
+                    {
+                        fileNameToSet = winrt::hstring(fileName);
+                    }
+                }
+                else
+                {
+                    // If no directory separator, treat the whole thing as a filename
+                    fileNameToSet = suggestedPath;
+                }
+            }
+        }
+
+        // Set the filename (either from SuggestedSaveFile or SuggestedFileName)
+        if (!PickerCommon::IsHStringNullOrEmpty(fileNameToSet))
+        {
+            check_hresult(dialog->SetFileName(fileNameToSet.c_str()));
         }
 
         {

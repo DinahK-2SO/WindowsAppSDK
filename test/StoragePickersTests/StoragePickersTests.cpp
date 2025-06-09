@@ -5,6 +5,7 @@
 
 #include <FrameworkUdk/Containment.h>
 #include <winrt/Microsoft.Windows.Storage.Pickers.h>
+#include <SuggestedSaveFile.h>
 
 namespace TB = ::Test::Bootstrap;
 namespace TP = ::Test::Packages;
@@ -176,6 +177,49 @@ namespace Test::StoragePickersTests
             filters.Append(L"*");
             picker.FileTypeChoices().Insert(L"All Files", filters);
             VERIFY_ARE_EQUAL(picker.FileTypeChoices().Lookup(L"All Files").GetAt(0), L"*");
+        }
+
+        TEST_METHOD(VerifySuggestedSaveFileInterface)
+        {
+            // Test the new ISuggestedSaveFile interface and SuggestedSaveFile runtime class
+            auto suggestedFile = winrt::make<winrt::Microsoft::Windows::Storage::Pickers::implementation::SuggestedSaveFile>(L"C:\\Users\\Documents\\MyDocument.txt");
+            VERIFY_ARE_EQUAL(suggestedFile.Path(), L"C:\\Users\\Documents\\MyDocument.txt");
+
+            // Test that it can be used as an ISuggestedSaveFile
+            winrt::Microsoft::Windows::Storage::Pickers::ISuggestedSaveFile interfaceRef = suggestedFile;
+            VERIFY_ARE_EQUAL(interfaceRef.Path(), L"C:\\Users\\Documents\\MyDocument.txt");
+        }
+
+        TEST_METHOD(VerifyFileSavePickerSuggestedSaveFileProperty)
+        {
+            winrt::Microsoft::UI::WindowId windowId{};
+            winrt::Microsoft::Windows::Storage::Pickers::FileSavePicker picker(windowId);
+
+            // Test setting and getting ISuggestedSaveFile
+            auto suggestedFile = winrt::make<winrt::Microsoft::Windows::Storage::Pickers::implementation::SuggestedSaveFile>(L"C:\\Users\\Documents\\TestFile.docx");
+            picker.SuggestedSaveFile(suggestedFile);
+
+            auto retrievedFile = picker.SuggestedSaveFile();
+            VERIFY_IS_NOT_NULL(retrievedFile);
+            VERIFY_ARE_EQUAL(retrievedFile.Path(), L"C:\\Users\\Documents\\TestFile.docx");
+
+            // Test setting to null
+            picker.SuggestedSaveFile(nullptr);
+            auto nullFile = picker.SuggestedSaveFile();
+            VERIFY_IS_NULL(nullFile);
+        }
+
+        TEST_METHOD(VerifySuggestedSaveFilePathHandling)
+        {
+            // Test path handling with various path formats
+            auto suggestedFile1 = winrt::make<winrt::Microsoft::Windows::Storage::Pickers::implementation::SuggestedSaveFile>(L"C:\\Users\\Documents\\Report.pdf");
+            VERIFY_ARE_EQUAL(suggestedFile1.Path(), L"C:\\Users\\Documents\\Report.pdf");
+
+            auto suggestedFile2 = winrt::make<winrt::Microsoft::Windows::Storage::Pickers::implementation::SuggestedSaveFile>(L"MyFile.txt");
+            VERIFY_ARE_EQUAL(suggestedFile2.Path(), L"MyFile.txt");
+
+            auto suggestedFile3 = winrt::make<winrt::Microsoft::Windows::Storage::Pickers::implementation::SuggestedSaveFile>(L"D:\\Projects\\Source\\main.cpp");
+            VERIFY_ARE_EQUAL(suggestedFile3.Path(), L"D:\\Projects\\Source\\main.cpp");
         }
 
         TEST_METHOD(VerifyFolderPickerOptionsAreReadCorrectly)
