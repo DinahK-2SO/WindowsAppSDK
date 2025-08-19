@@ -1,0 +1,24 @@
+<!-- Manifest snippet emphasizing AppService; developer must integrate fully -->
+<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" 
+         xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities" 
+         xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" 
+         xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" 
+         xmlns:uap3="http://schemas.microsoft.com/appx/manifest/uap/windows10/3" 
+         IgnorableNamespaces="uap uap3 rescap">
+  <Applications>
+    <Application Id="App" 
+                 Executable="Broker.exe" 
+                 EntryPoint="HybridFilePicker.Broker.BrokerService">
+      <Extensions>
+        <uap:Extension Category="windows.appService">
+          <uap:AppService Name="com.example.filepickerbroker" />
+        </uap:Extension>
+        <uap:Extension Category="windows.backgroundTasks" EntryPoint="HybridFilePicker.Broker.BrokerService">
+          <uap:BackgroundTasks>
+            <uap:Task Type="appService" />
+          </uap:BackgroundTasks>
+        </uap:Extension>
+      </Extensions>
+    </Application>
+  </Applications>
+</Package>
