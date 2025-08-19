@@ -1,0 +1,6 @@
+<!-- Sample-specific build props - prevents inheritance from main WindowsAppSDK build system -->
+<Project>
+  <PropertyGroup>
+    <!-- Standalone sample: Do not inherit from main repo -->
+  </PropertyGroup>
+</Project>
